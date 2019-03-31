@@ -1,0 +1,13 @@
+{
+  "name": "anonymous",
+  "private": true,
+  "version": "0.0.1",
+  "dependencies": {
+    "topojson": "1",
+    "gulp": "^3.9.1",
+    "gulp-postcss": "^6.3.0",
+    "gulp-sourcemaps": "^2.4.1",
+    "gulp-util": "^3.0.8",
+    "gulp-webserver": "^0.9.1"
+  }
+}
