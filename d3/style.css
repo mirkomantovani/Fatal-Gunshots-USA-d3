@@ -1,0 +1,36 @@
+.land {
+    fill: rgb(233, 233, 233);
+    stroke: #fff;
+    stroke-width: 0.3;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+.border {
+    fill: none;
+    stroke: #fff;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+.bubble {
+    fill-opacity: .5;
+    stroke: #fff;
+    stroke-width: .5px;
+}
+
+.bubble :hover {
+    fill-opacity: .1;
+    stroke: #000;
+}
+
+.legend circle {
+    fill: none;
+    stroke: #ccc;
+}
+
+.legend text {
+    fill: #777;
+    font: 10px sans-serif;
+    text-anchor: middle;
+}
