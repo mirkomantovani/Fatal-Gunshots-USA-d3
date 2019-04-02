@@ -6,6 +6,20 @@
     stroke-linecap: round;
 }
 
+div.tooltip {
+    position: absolute;			
+    text-align: center;	
+    opacity: 0.8;	
+    color: white;		
+    /* padding: 10px;	
+    padding-bottom: 100px;			 */
+    font: 12px sans-serif;		
+    background: #000;	
+    /* border: 10px solid black;		 */
+    border-radius: 25px;			
+    pointer-events: none;	
+}
+
 .border {
     fill: none;
     stroke: #fff;
@@ -22,6 +36,8 @@
 .bubble :hover {
     fill-opacity: .1;
     stroke: #000;
+    stroke-width: 3px;
+
 }
 
 .legend circle {
