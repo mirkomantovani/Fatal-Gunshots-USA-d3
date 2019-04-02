@@ -2,7 +2,7 @@ var w = window.innerWidth;
 var h = window.innerHeight;
 
 var width = w,
-    height = h - 150;
+    height = h;
 
 const bubbleOpacity = 1;
 const hoverBubbleOpacity = .3;
@@ -129,6 +129,18 @@ function ready(error, gundeaths) {
     drawmainmap(gdcity)
 };
 
+function zoomSVG(factor){
+    svg
+        .transition().duration(2000)
+        .attr("transform", `translate(${-width/factor},${-height/factor}) scale(${factor})`);
+}
+
+function resetZoomSVG(){
+    svg
+        .transition().duration(1000)
+        .attr("transform", `translate(0,0) scale(1)`);
+}
+
 
 function drawmainmap(gundeaths) {
     // var div = d3.select("body").append("div")
@@ -189,6 +201,8 @@ function drawmainmap(gundeaths) {
                     .attr('cy', function (d) {
                         return projection([d.lng, d.lat])[1];
                     });
+
+                    resetZoomSVG();
             } else { // If no one is selected
                 focusedBubble = current;
                 current.
@@ -201,7 +215,9 @@ function drawmainmap(gundeaths) {
                     })
                     .attr('cy', function (d) {
                         return height / 2;
-                    })
+                    });
+
+                    zoomSVG(2);
             }
 
             // .style('stroke-width', '3px')
