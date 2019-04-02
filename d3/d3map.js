@@ -48,6 +48,8 @@ var tooltip = d3.select('body')
     .style('visibility', 'hidden');
 
 var focusedBubble = null;
+var male = null;
+var female = null;
 
 function componentToHex(c) {
     var hex = c.toString(16);
@@ -150,7 +152,7 @@ function drawmainmap(gundeaths) {
     //     .attr("class", "tooltip")
     //     .style("opacity", 0);
 
-    var male = bub.selectAll('.male')
+    male = bub.selectAll('.male')
         .data([{}]).enter().append('circle')
         .attr("class", "male")
         .attr('fill', '#4f83ff')
@@ -158,7 +160,7 @@ function drawmainmap(gundeaths) {
         .attr('cx', width/2)
         .attr('cy', height/2);
 
-    var female = bub.selectAll('.female')
+    female = bub.selectAll('.female')
         .data([{}]).enter().append('circle')
         .attr("class", "female")
         .attr('fill', '#e89aea')
@@ -189,28 +191,13 @@ function drawmainmap(gundeaths) {
         .on('click', function (d) {
             var current = d3.select(this);
             // If there is a focused bubble
-            if (focusedBubble) {
-                focusedBubble.moveToBack();
-                focusedBubble.transition().duration(1000)
-                .attr('fill', function (d) {
-                    return encodeColorProportionHex(d.mcount, d.fcount);
-                })
-                    .style('fill-opacity', .8)
-                    .attr('r', function (d) {
-                        return rscale(d.count);
-                    })
-                    .attr('cx', function (d) {
-                        return projection([d.lng, d.lat])[0];
-
-                    })
-                    .attr('cy', function (d) {
-                        return projection([d.lng, d.lat])[1];
-                    })
-                    .on("end", () => {focusedBubble.attr("data-foc", "false");});
-
+            if (focusedBubble && current.attr("data-foc") !== 'true') {
+                console.log('first')
+                resetZoom();
             }
-            // If the current selected bubbled is focused
+            // If the currently selected bubbled is focused
             if (current.attr("data-foc") === 'true') {
+                console.log('currently selected bubble is foc')
                 // current.attr("data-foc", "false");
                 current.moveToBack();
                 current.transition().duration(1000)
@@ -227,7 +214,28 @@ function drawmainmap(gundeaths) {
                     .attr('cy', function (d) {
                         return projection([d.lng, d.lat])[1];
                     })
-                    .on("end", () => {current.attr("data-foc", "false");});
+                    .on("end", () => {current.attr("data-foc", "false");
+                focusedBubble = null;});
+
+                    male.transition().duration(1000)
+                    .attr('r', 0)
+                    .attr('cx', function (d) {
+                        return projection([d.lng, d.lat])[0];
+    
+                    })
+                    .attr('cy', function (d) {
+                        return projection([d.lng, d.lat])[1];
+                    });
+    
+                    female.transition().duration(1000)
+                    .attr('r', 0)
+                    .attr('cx', function (d) {
+                        return projection([d.lng, d.lat])[0];
+    
+                    })
+                    .attr('cy', function (d) {
+                        return projection([d.lng, d.lat])[1];
+                    });
 
                 resetZoomSVG();
             } else { // If no one is selected, focus bubble and bring to front
@@ -248,7 +256,7 @@ function drawmainmap(gundeaths) {
                     });
 
                 console.log(d)
-
+                // Male bubble
                 male.data([d])
                 .attr('cx', function (d) {
                     return projection([d.lng, d.lat])[0];
@@ -274,7 +282,7 @@ function drawmainmap(gundeaths) {
                 .attr('cy', function (d) {
                     return height / 2;
                 });
-
+                // Female bubble
                 female.data([d])
                 .attr('cx', function (d) {
                     return projection([d.lng, d.lat])[0];
@@ -414,8 +422,56 @@ d3.json("data/us-states.topojson", function (error, geodata) {
         .append("path")
         .attr('class', 'land')
         .attr("d", path)
+        .on("click",resetZoom);
 
 });
+
+function resetZoom(/*d,i*/){
+    if(focusedBubble){
+    resetZoomSVG();
+    focusedBubble.moveToBack();
+    focusedBubble.attr("data-foc", "false");
+                focusedBubble.transition().duration(1000)
+                .attr('fill', function (d) {
+                    return encodeColorProportionHex(d.mcount, d.fcount);
+                })
+                    .style('fill-opacity', .8)
+                    .attr('r', function (d) {
+                        return rscale(d.count);
+                    })
+                    .attr('cx', function (d) {
+                        return projection([d.lng, d.lat])[0];
+
+                    })
+                    .attr('cy', function (d) {
+                        return projection([d.lng, d.lat])[1];
+                    })
+                    .on("end", () => {
+                        // focusedBubble.attr("data-foc", "false");
+                        // focusedBubble = null;
+                    });
+                
+                male.transition().duration(1000)
+                .attr('r', 0)
+                .attr('cx', function (d) {
+                    return projection([d.lng, d.lat])[0];
+
+                })
+                .attr('cy', function (d) {
+                    return projection([d.lng, d.lat])[1];
+                });
+
+                female.transition().duration(1000)
+                .attr('r', 0)
+                .attr('cx', function (d) {
+                    return projection([d.lng, d.lat])[0];
+
+                })
+                .attr('cy', function (d) {
+                    return projection([d.lng, d.lat])[1];
+                });
+            }
+}
 
 var legend = svg.append("g")
     .attr("class", "legend")
