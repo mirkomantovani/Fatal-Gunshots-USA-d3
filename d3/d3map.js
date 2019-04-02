@@ -19,7 +19,11 @@ var path = d3.geoPath()
 
 var svg = d3.select("body").append("svg")
     .attr("width", width)
-    .attr("height", height);
+    .attr("height", height)
+    .call(d3.zoom().on("zoom", function () {
+        svg.attr("transform", d3.event.transform)
+     }))
+    .append('g');
 
 //Group for the map features
 var features = svg.append("g")
@@ -45,21 +49,42 @@ var tooltip = d3.select('body')
 
 var focusedBubble = null;
 
+function componentToHex(c) {
+    var hex = c.toString(16);
+    return hex.length == 1 ? "0" + hex : hex;
+}
+
+function rgbToHex(r, g, b) {
+    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}
+
+function encodeColorProportionHex(m, f) {
+    var brightness = 180;
+    var green = 40;
+    if (m < f) {
+        // console.log(rgbToHex(255, green, m * brightness / f))
+        return rgbToHex(255, green, 255);
+    } else {
+        // console.log(rgbToHex(parseInt(f * brightness / m), green, 255))
+        return rgbToHex(parseInt(f * brightness / m), green, 255);
+    }
+}
+
 // Extending d3 functionalities to move to back and front elements
-d3.selection.prototype.moveToFront = function() {
+d3.selection.prototype.moveToFront = function () {
     // el = d3.select(this).node();
-    return this.each(function(){
-      this.parentNode.appendChild(this);
+    return this.each(function () {
+        this.parentNode.appendChild(this);
     });
 };
 
-d3.selection.prototype.moveToBack = function() {  
-    return this.each(function() { 
+d3.selection.prototype.moveToBack = function () {
+    return this.each(function () {
         // console.log(d3.select(this).parentNode)
-        var firstChild = this.parentNode.firstChild; 
-        if (firstChild) { 
-            this.parentNode.insertBefore(this, firstChild); 
-        } 
+        var firstChild = this.parentNode.firstChild;
+        if (firstChild) {
+            this.parentNode.insertBefore(this, firstChild);
+        }
     });
 };
 
@@ -115,6 +140,9 @@ function drawmainmap(gundeaths) {
 
     deaths.enter().append('circle')
         .attr("class", "bubble")
+        .attr('fill', function(d){
+            return encodeColorProportionHex(d.mcount,d.fcount);
+        })
         .attr('r', function (d) {
             return rscale(d.count);
         })
@@ -133,13 +161,13 @@ function drawmainmap(gundeaths) {
             if (focusedBubble) {
                 focusedBubble.moveToBack();
                 focusedBubble.transition().duration(1000)
-                    .style('fill-opacity', .5)
+                    .style('fill-opacity', .8)
                     .attr('r', function (d) {
                         return rscale(d.count);
                     })
                     .attr('cx', function (d) {
                         return projection([d.lng, d.lat])[0];
-            
+
                     })
                     .attr('cy', function (d) {
                         return projection([d.lng, d.lat])[1];
@@ -148,10 +176,10 @@ function drawmainmap(gundeaths) {
             }
             // If the current selected bubbled is focused
             if (current.attr("data-foc") === 'true') {
-                current.attr("data-foc","false");
+                current.attr("data-foc", "false");
                 current.moveToBack();
                 current.transition().duration(1000)
-                    .style('fill-opacity', .5)
+                    .style('fill-opacity', .8)
                     .attr('r', function (d) {
                         return rscale(d.count);
                     })
@@ -164,16 +192,15 @@ function drawmainmap(gundeaths) {
             } else { // If no one is selected
                 focusedBubble = current;
                 current.
-                    transition().duration(1000)
-                    .style('fill', 'black')
+                    transition().duration(1000).ease(d3.easeBounce)
                     .style('fill-opacity', 1)
                     .attr('data-foc', "true")
-                    .attr("r", function (d) { return width/10+rscale(d.count)*5; })
+                    .attr("r", function (d) { return width / 10 + rscale(d.count) * 5; })
                     .attr('cx', function (d) {
-                        return width/2;
+                        return width / 2;
                     })
                     .attr('cy', function (d) {
-                        return height/2;
+                        return height / 2;
                     })
             }
 
@@ -186,7 +213,7 @@ function drawmainmap(gundeaths) {
         .on('mouseover', function (d) {
             var current = d3.select(this);
             current.
-                attr('opacity',hoverBubbleOpacity);
+                attr('opacity', hoverBubbleOpacity);
 
             // console.log(this)
             // console.log(d3.select(this))
@@ -201,24 +228,24 @@ function drawmainmap(gundeaths) {
                 <br>
                 `
             );
-            
-            if(current.attr('data-foc') == 'true'){
+
+            if (current.attr('data-foc') == 'true') {
                 tooltip
-                    .style("left", (width/2-70) + "px")		
-                    .style("top", (height/6) + "px");
+                    .style("left", (width / 2 - 70) + "px")
+                    .style("top", (height / 6) + "px");
             } else {
                 tooltip
-                    .style("left", (d3.event.pageX+20) + "px")		
+                    .style("left", (d3.event.pageX + 20) + "px")
                     .style("top", (d3.event.pageY - 28) + "px");
             }
 
         })
-    
+
         .on('mouseout', function (d) {
             d3.select(this)
-                .attr('opacity',bubbleOpacity);
-                
-            tooltip.style('visibility','hidden');
+                .attr('opacity', bubbleOpacity);
+
+            tooltip.style('visibility', 'hidden');
         });
 
 }

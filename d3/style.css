@@ -28,7 +28,7 @@ div.tooltip {
 }
 
 .bubble {
-    fill-opacity: .5;
+    fill-opacity: .8;
     stroke: #fff;
     stroke-width: .5px;
 }
