@@ -22,7 +22,7 @@ var svg = d3.select("body").append("svg")
     .attr("height", height)
     .call(d3.zoom().on("zoom", function () {
         svg.attr("transform", d3.event.transform)
-     }))
+    }))
     .append('g');
 
 //Group for the map features
@@ -129,31 +129,51 @@ function ready(error, gundeaths) {
     drawmainmap(gdcity)
 };
 
-function zoomSVG(factor){
+function zoomSVG(factor) {
     svg
         .transition().duration(2000)
-        .attr("transform", `translate(${-width/factor},${-height/factor}) scale(${factor})`);
+        .attr("transform", `translate(${-width / factor},${-height / factor}) scale(${factor})`);
 }
 
-function resetZoomSVG(){
+function resetZoomSVG() {
     svg
         .transition().duration(1000)
         .attr("transform", `translate(0,0) scale(1)`);
 }
 
+function focusedBubbleRadius(deaths){
+    return width / 10 + rscale(deaths) * 5;
+}
 
 function drawmainmap(gundeaths) {
     // var div = d3.select("body").append("div")
     //     .attr("class", "tooltip")
     //     .style("opacity", 0);
 
+    var male = bub.selectAll('.male')
+        .data([{}]).enter().append('circle')
+        .attr("class", "male")
+        .attr('fill', '#4f83ff')
+        .attr('r', 0)
+        .attr('cx', width/2)
+        .attr('cy', height/2);
+
+    var female = bub.selectAll('.female')
+        .data([{}]).enter().append('circle')
+        .attr("class", "female")
+        .attr('fill', '#e89aea')
+        .attr('r', 0)
+        .attr('cx', width/2)
+        .attr('cy', height/2);
+        // .attr('visibility','invisible');
+
     var deaths = bub.selectAll('.bubble')
         .data(gundeaths.sort(function (a, b) { return b.count - a.count; }))
 
     deaths.enter().append('circle')
         .attr("class", "bubble")
-        .attr('fill', function(d){
-            return encodeColorProportionHex(d.mcount,d.fcount);
+        .attr('fill', function (d) {
+            return encodeColorProportionHex(d.mcount, d.fcount);
         })
         .attr('r', function (d) {
             return rscale(d.count);
@@ -168,11 +188,13 @@ function drawmainmap(gundeaths) {
 
         .on('click', function (d) {
             var current = d3.select(this);
-            current.moveToFront();
             // If there is a focused bubble
             if (focusedBubble) {
                 focusedBubble.moveToBack();
                 focusedBubble.transition().duration(1000)
+                .attr('fill', function (d) {
+                    return encodeColorProportionHex(d.mcount, d.fcount);
+                })
                     .style('fill-opacity', .8)
                     .attr('r', function (d) {
                         return rscale(d.count);
@@ -183,14 +205,18 @@ function drawmainmap(gundeaths) {
                     })
                     .attr('cy', function (d) {
                         return projection([d.lng, d.lat])[1];
-                    });
+                    })
+                    .on("end", () => {focusedBubble.attr("data-foc", "false");});
 
             }
             // If the current selected bubbled is focused
             if (current.attr("data-foc") === 'true') {
-                current.attr("data-foc", "false");
+                // current.attr("data-foc", "false");
                 current.moveToBack();
                 current.transition().duration(1000)
+                .attr('fill', function (d) {
+                    return encodeColorProportionHex(d.mcount, d.fcount);
+                })
                     .style('fill-opacity', .8)
                     .attr('r', function (d) {
                         return rscale(d.count);
@@ -200,16 +226,20 @@ function drawmainmap(gundeaths) {
                     })
                     .attr('cy', function (d) {
                         return projection([d.lng, d.lat])[1];
-                    });
+                    })
+                    .on("end", () => {current.attr("data-foc", "false");});
 
-                    resetZoomSVG();
-            } else { // If no one is selected
+                resetZoomSVG();
+            } else { // If no one is selected, focus bubble and bring to front
                 focusedBubble = current;
+                current.moveToFront();
                 current.
                     transition().duration(1000).ease(d3.easeBounce)
-                    .style('fill-opacity', 1)
+                    .attr('fill','#000000')
+                    .attr('opacity', bubbleOpacity)
+                    // .style('fill-opacity', 1)
                     .attr('data-foc', "true")
-                    .attr("r", function (d) { return width / 10 + rscale(d.count) * 5; })
+                    .attr("r", function (d) { return focusedBubbleRadius(d.count); })
                     .attr('cx', function (d) {
                         return width / 2;
                     })
@@ -217,7 +247,100 @@ function drawmainmap(gundeaths) {
                         return height / 2;
                     });
 
-                    zoomSVG(2);
+                console.log(d)
+
+                male.data([d])
+                .attr('cx', function (d) {
+                    return projection([d.lng, d.lat])[0];
+
+                })
+                .attr('cy', function (d) {
+                    return projection([d.lng, d.lat])[1];
+                })
+                .transition().duration(1000).ease(d3.easeBounce)
+                .attr("r", function (d) { 
+                    var bigR = focusedBubbleRadius(d.count);
+                    console.log(bigR)
+                    var malesPercentage = d.mcount/d.count;
+                    console.log(malesPercentage)
+                    console.log(bigR*malesPercentage)
+                    return bigR*malesPercentage; 
+                })
+                .attr('cx', function (d) {
+                    var bigR = focusedBubbleRadius(d.count);
+                    var malesPercentage = d.mcount/d.count;
+                    return width / 2 -bigR + bigR*malesPercentage;
+                })
+                .attr('cy', function (d) {
+                    return height / 2;
+                });
+
+                female.data([d])
+                .attr('cx', function (d) {
+                    return projection([d.lng, d.lat])[0];
+
+                })
+                .attr('cy', function (d) {
+                    return projection([d.lng, d.lat])[1];
+                })
+                .transition().duration(1000).ease(d3.easeBounce)
+                .attr("r", function (d) { 
+                    var bigR = focusedBubbleRadius(d.count);
+                    // console.log(bigR)
+                    var femalesPercentage = d.fcount/d.count;
+                    // console.log(malesPercentage)
+                    // console.log(bigR*femalesPercentage)
+                    return bigR*femalesPercentage; 
+                })
+                .attr('cx', function (d) {
+                    var bigR = focusedBubbleRadius(d.count);
+                    var femalesPercentage = d.fcount/d.count;
+                    return width / 2 +bigR - bigR*femalesPercentage;
+                })
+                .attr('cy', function (d) {
+                    return height / 2;
+                });
+                male.moveToFront();
+                female.moveToFront();
+
+                // bub.append('circle')
+                // .attr('class','male');
+
+    //             var male = bub.selectAll('.male')
+    //     .data([d]) // Apparently data needs an array
+
+    // male.enter().append('circle')
+    //     .attr("class", "male")
+    //     .attr('fill', function (d) {
+    //         return encodeColorProportionHex(d.mcount, d.fcount);
+    //     })
+    //     .attr('r', function (d) {
+    //         return rscale(d.count);
+    //     })
+    //     .attr('cx', function (d) {
+    //         return width / 2;
+
+    //     })
+    //     .attr('cy', function (d) {
+    //         return height / 2;
+    //     })
+
+                // bub.selectAll('.male')
+                // .data(d).enter()
+                // .append('circle')
+                //     .attr("class", ".male")
+                //     // .attr("class", "man")
+                //     .attr('r', function (d) {
+                //         return rscale(100);
+                //     })
+                //     .attr('cx', function (d) {
+                //         return width / 2;
+                //     })
+                //     .attr('cy', function (d) {
+                //         return height / 2;
+                //     });
+
+                zoomSVG(2);
             }
 
             // .style('stroke-width', '3px')
@@ -228,8 +351,14 @@ function drawmainmap(gundeaths) {
 
         .on('mouseover', function (d) {
             var current = d3.select(this);
-            current.
-                attr('opacity', hoverBubbleOpacity);
+            if (current.attr("data-foc") !== 'true') {
+                current
+                    .transition().duration(100).ease(d3.easeExpOut)
+                    .attr('r', function (d) {
+                        return rscale(d.count) + 10;
+                    })
+                    .attr('opacity', hoverBubbleOpacity);
+            }
 
             // console.log(this)
             // console.log(d3.select(this))
@@ -258,8 +387,18 @@ function drawmainmap(gundeaths) {
         })
 
         .on('mouseout', function (d) {
-            d3.select(this)
-                .attr('opacity', bubbleOpacity);
+            var current = d3.select(this);
+            // current
+            //     .attr('opacity', bubbleOpacity);
+
+            if (current.attr("data-foc") !== 'true') {
+                current
+                    .transition().duration(100)
+                    .attr('r', function (d) {
+                        return rscale(d.count);
+                    })
+                    .attr('opacity', bubbleOpacity);
+            }
 
             tooltip.style('visibility', 'hidden');
         });
