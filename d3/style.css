@@ -50,3 +50,17 @@ div.tooltip {
     font: 10px sans-serif;
     text-anchor: middle;
 }
+
+ .c3 .c3-axis-x path,
+ .c3 .c3-axis-x line,
+
+ .c3 .c3-axis-y path,
+ .c3 .c3-axis-y line {
+    stroke: white;
+}
+
+ .c3 .c3-axis-x g,
+ .c3 .c3-axis-y g,
+ .c3 .c3-legend-item text {
+    fill: whitesmoke;
+}

@@ -7,6 +7,7 @@ var width = w,
 const bubbleOpacity = 1;
 const hoverBubbleOpacity = .3;
 
+
 //Map projection
 //Map projection
 var projection = d3.geoAlbersUsa()
@@ -64,10 +65,8 @@ function encodeColorProportionHex(m, f) {
     var brightness = 180;
     var green = 40;
     if (m < f) {
-        // console.log(rgbToHex(255, green, m * brightness / f))
         return rgbToHex(255, green, 255);
     } else {
-        // console.log(rgbToHex(parseInt(f * brightness / m), green, 255))
         return rgbToHex(parseInt(f * brightness / m), green, 255);
     }
 }
@@ -82,7 +81,6 @@ d3.selection.prototype.moveToFront = function () {
 
 d3.selection.prototype.moveToBack = function () {
     return this.each(function () {
-        // console.log(d3.select(this).parentNode)
         var firstChild = this.parentNode.firstChild;
         if (firstChild) {
             this.parentNode.insertBefore(this, firstChild);
@@ -96,6 +94,7 @@ d3.queue()
 
 function ready(error, gundeaths) {
     if (error) return console.log(error); //unknown error, check the console
+    console.log(gundeaths)
     var gdsummary = d3.nest()
         .key(function (d) { return d.state; })
         .key(function (d) { return d.city; })
@@ -107,12 +106,16 @@ function ready(error, gundeaths) {
                 count: v.length,
                 lat: d3.mean(v, function (d) { return d.lat; }),
                 lng: d3.mean(v, function (d) { return d.lng; }),
+                children: d3.sum(v.filter(function (d) { return d.ageGroup == '1' }), function (d) { return 1; }),
+                teens: d3.sum(v.filter(function (d) { return d.ageGroup == '2' }), function (d) { return 1; }),
+                adults: d3.sum(v.filter(function (d) { return d.ageGroup == '3' }), function (d) { return 1; }),
                 fcount: d3.sum(v.filter(function (d) { return d.gender == 'F' }), function (d) { return 1; }),
                 mcount: d3.sum(v.filter(function (d) { return d.gender == 'M' }), function (d) { return 1; })
             };
         })
         .entries(gundeaths);
 
+    console.log(gdsummary)
     var gdcity = []
     gdsummary.forEach(d => {
         d.values.forEach(ele => {
@@ -122,11 +125,17 @@ function ready(error, gundeaths) {
                 count: ele.value.count,
                 lat: ele.value.lat,
                 lng: ele.value.lng,
+                children: ele.value.children,
+                teens: ele.value.teens,
+                adults: ele.value.adults,
                 fcount: ele.value.fcount,
                 mcount: ele.value.mcount
             });
         });
     });
+
+    // console.log(typeof(gdcity))
+    // JSON.stringify(gdcity)
 
     drawmainmap(gdcity)
 };
@@ -143,7 +152,7 @@ function resetZoomSVG() {
         .attr("transform", `translate(0,0) scale(1)`);
 }
 
-function focusedBubbleRadius(deaths){
+function focusedBubbleRadius(deaths) {
     return width / 10 + rscale(deaths) * 5;
 }
 
@@ -157,17 +166,17 @@ function drawmainmap(gundeaths) {
         .attr("class", "male")
         .attr('fill', '#4f83ff')
         .attr('r', 0)
-        .attr('cx', width/2)
-        .attr('cy', height/2);
+        .attr('cx', width / 2)
+        .attr('cy', height / 2);
 
     female = bub.selectAll('.female')
         .data([{}]).enter().append('circle')
         .attr("class", "female")
         .attr('fill', '#e89aea')
         .attr('r', 0)
-        .attr('cx', width/2)
-        .attr('cy', height/2);
-        // .attr('visibility','invisible');
+        .attr('cx', width / 2)
+        .attr('cy', height / 2);
+    // .attr('visibility','invisible');
 
     var deaths = bub.selectAll('.bubble')
         .data(gundeaths.sort(function (a, b) { return b.count - a.count; }))
@@ -192,18 +201,16 @@ function drawmainmap(gundeaths) {
             var current = d3.select(this);
             // If there is a focused bubble
             if (focusedBubble && current.attr("data-foc") !== 'true') {
-                console.log('first')
                 resetZoom();
             }
             // If the currently selected bubbled is focused
             if (current.attr("data-foc") === 'true') {
-                console.log('currently selected bubble is foc')
                 // current.attr("data-foc", "false");
                 current.moveToBack();
                 current.transition().duration(1000)
-                .attr('fill', function (d) {
-                    return encodeColorProportionHex(d.mcount, d.fcount);
-                })
+                    .attr('fill', function (d) {
+                        return encodeColorProportionHex(d.mcount, d.fcount);
+                    })
                     .style('fill-opacity', .8)
                     .attr('r', function (d) {
                         return rscale(d.count);
@@ -214,24 +221,26 @@ function drawmainmap(gundeaths) {
                     .attr('cy', function (d) {
                         return projection([d.lng, d.lat])[1];
                     })
-                    .on("end", () => {current.attr("data-foc", "false");
-                focusedBubble = null;});
+                    .on("end", () => {
+                        current.attr("data-foc", "false");
+                        focusedBubble = null;
+                    });
 
-                    male.transition().duration(1000)
+                male.transition().duration(1000)
                     .attr('r', 0)
                     .attr('cx', function (d) {
                         return projection([d.lng, d.lat])[0];
-    
+
                     })
                     .attr('cy', function (d) {
                         return projection([d.lng, d.lat])[1];
                     });
-    
-                    female.transition().duration(1000)
+
+                female.transition().duration(1000)
                     .attr('r', 0)
                     .attr('cx', function (d) {
                         return projection([d.lng, d.lat])[0];
-    
+
                     })
                     .attr('cy', function (d) {
                         return projection([d.lng, d.lat])[1];
@@ -243,7 +252,7 @@ function drawmainmap(gundeaths) {
                 current.moveToFront();
                 current.
                     transition().duration(1000).ease(d3.easeBounce)
-                    .attr('fill','#000000')
+                    .attr('fill', '#000000')
                     .attr('opacity', bubbleOpacity)
                     // .style('fill-opacity', 1)
                     .attr('data-foc', "true")
@@ -254,107 +263,71 @@ function drawmainmap(gundeaths) {
                     .attr('cy', function (d) {
                         return height / 2;
                     });
-
-                console.log(d)
                 // Male bubble
                 male.data([d])
-                .attr('cx', function (d) {
-                    return projection([d.lng, d.lat])[0];
+                    .attr('cx', function (d) {
+                        return projection([d.lng, d.lat])[0];
 
-                })
-                .attr('cy', function (d) {
-                    return projection([d.lng, d.lat])[1];
-                })
-                .transition().duration(1000).ease(d3.easeBounce)
-                .attr("r", function (d) { 
-                    var bigR = focusedBubbleRadius(d.count);
-                    console.log(bigR)
-                    var malesPercentage = d.mcount/d.count;
-                    console.log(malesPercentage)
-                    console.log(bigR*malesPercentage)
-                    return bigR*malesPercentage; 
-                })
-                .attr('cx', function (d) {
-                    var bigR = focusedBubbleRadius(d.count);
-                    var malesPercentage = d.mcount/d.count;
-                    return width / 2 -bigR + bigR*malesPercentage;
-                })
-                .attr('cy', function (d) {
-                    return height / 2;
-                });
+                    })
+                    .attr('cy', function (d) {
+                        return projection([d.lng, d.lat])[1];
+                    })
+                    .transition().duration(1000).ease(d3.easeBounce)
+                    .attr("r", function (d) {
+                        var bigR = focusedBubbleRadius(d.count);
+                        var malesPercentage = d.mcount / d.count;
+                        return bigR * malesPercentage;
+                    })
+                    .attr('cx', function (d) {
+                        var bigR = focusedBubbleRadius(d.count);
+                        var malesPercentage = d.mcount / d.count;
+                        return width / 2 - bigR + bigR * malesPercentage;
+                    })
+                    .attr('cy', function (d) {
+                        return height / 2;
+                    });
                 // Female bubble
                 female.data([d])
-                .attr('cx', function (d) {
-                    return projection([d.lng, d.lat])[0];
+                    .attr('cx', function (d) {
+                        return projection([d.lng, d.lat])[0];
 
-                })
-                .attr('cy', function (d) {
-                    return projection([d.lng, d.lat])[1];
-                })
-                .transition().duration(1000).ease(d3.easeBounce)
-                .attr("r", function (d) { 
-                    var bigR = focusedBubbleRadius(d.count);
-                    // console.log(bigR)
-                    var femalesPercentage = d.fcount/d.count;
-                    // console.log(malesPercentage)
-                    // console.log(bigR*femalesPercentage)
-                    return bigR*femalesPercentage; 
-                })
-                .attr('cx', function (d) {
-                    var bigR = focusedBubbleRadius(d.count);
-                    var femalesPercentage = d.fcount/d.count;
-                    return width / 2 +bigR - bigR*femalesPercentage;
-                })
-                .attr('cy', function (d) {
-                    return height / 2;
-                });
+                    })
+                    .attr('cy', function (d) {
+                        return projection([d.lng, d.lat])[1];
+                    })
+                    .transition().duration(1000).ease(d3.easeBounce)
+                    .attr("r", function (d) {
+                        var bigR = focusedBubbleRadius(d.count);
+                        var femalesPercentage = d.fcount / d.count;
+                        return bigR * femalesPercentage;
+                    })
+                    .attr('cx', function (d) {
+                        var bigR = focusedBubbleRadius(d.count);
+                        var femalesPercentage = d.fcount / d.count;
+                        return width / 2 + bigR - bigR * femalesPercentage;
+                    })
+                    .attr('cy', function (d) {
+                        return height / 2;
+                    });
                 male.moveToFront();
                 female.moveToFront();
 
-                // bub.append('circle')
-                // .attr('class','male');
-
-    //             var male = bub.selectAll('.male')
-    //     .data([d]) // Apparently data needs an array
-
-    // male.enter().append('circle')
-    //     .attr("class", "male")
-    //     .attr('fill', function (d) {
-    //         return encodeColorProportionHex(d.mcount, d.fcount);
-    //     })
-    //     .attr('r', function (d) {
-    //         return rscale(d.count);
-    //     })
-    //     .attr('cx', function (d) {
-    //         return width / 2;
-
-    //     })
-    //     .attr('cy', function (d) {
-    //         return height / 2;
-    //     })
-
-                // bub.selectAll('.male')
-                // .data(d).enter()
-                // .append('circle')
-                //     .attr("class", ".male")
-                //     // .attr("class", "man")
-                //     .attr('r', function (d) {
-                //         return rscale(100);
-                //     })
-                //     .attr('cx', function (d) {
-                //         return width / 2;
-                //     })
-                //     .attr('cy', function (d) {
-                //         return height / 2;
-                //     });
+                var chart = c3.generate({
+                    bindto: '.male',
+                    data: {
+                        columns: [
+                            ['data1', 4, 2, 3],
+                            // ['data2', 50, 20, 10, 40, 15, 25]
+                        ],
+                        types: {
+                            data1: 'bar'
+                        }
+                    }
+                });
 
                 zoomSVG(2);
             }
 
-            // .style('stroke-width', '3px')
-            // tempColor = this.style.fill;
-            // d3.select(this)
-            //     .style('fill', 'yellow')
         })
 
         .on('mouseover', function (d) {
@@ -368,9 +341,6 @@ function drawmainmap(gundeaths) {
                     .attr('opacity', hoverBubbleOpacity);
             }
 
-            // console.log(this)
-            // console.log(d3.select(this))
-            // console.log(d)
             tooltip.transition()
                 .style('visibility', "visible");
 
@@ -379,8 +349,50 @@ function drawmainmap(gundeaths) {
                 
                 Deaths: ${d.count} (<font color="#f47f8b">${d.fcount}</font> | <font color="#4286f4">${d.mcount}</font>)
                 <br>
+                <div class="inverted" id="c3tooltipbar"></div>
                 `
             );
+
+            // tooltip
+            //     .append('div')
+            //     .attr("id", "c3tooltipbar")
+            // .attr('width', "100%")
+            // .attr('height', "20px");
+
+            // var chart = c3.generate({
+            //     bindto: '#c3tooltipbar',
+            //     data: {
+            //         columns: [
+            //             ['data1', 4, 2, 3],
+            //             // ['data2', 50, 20, 10, 40, 15, 25]
+            //         ],
+            //         types: {
+            //             data1: 'bar'
+            //         }
+            //     }
+            // });
+
+            var chart = c3.generate({
+                bindto: '#c3tooltipbar',
+                size: {
+                    height: 150,
+                    width: 200
+                },
+                data: {
+                    columns: [
+                        ['Children', d.children],
+                        ['Teens', d.teens],
+                        ['Adults', d.adults]
+                    ],
+                    type : 'donut',
+                    onclick: function (d, i) { console.log("onclick", d, i); },
+                    onmouseover: function (d, i) { console.log("onmouseover", d, i); },
+                    onmouseout: function (d, i) { console.log("onmouseout", d, i); }
+                },
+                donut: {
+                    title: "Iris Petal Width"
+                }
+            });
 
             if (current.attr('data-foc') == 'true') {
                 tooltip
@@ -422,55 +434,55 @@ d3.json("data/us-states.topojson", function (error, geodata) {
         .append("path")
         .attr('class', 'land')
         .attr("d", path)
-        .on("click",resetZoom);
+        .on("click", resetZoom);
 
 });
 
-function resetZoom(/*d,i*/){
-    if(focusedBubble){
-    resetZoomSVG();
-    focusedBubble.moveToBack();
-    focusedBubble.attr("data-foc", "false");
-                focusedBubble.transition().duration(1000)
-                .attr('fill', function (d) {
-                    return encodeColorProportionHex(d.mcount, d.fcount);
-                })
-                    .style('fill-opacity', .8)
-                    .attr('r', function (d) {
-                        return rscale(d.count);
-                    })
-                    .attr('cx', function (d) {
-                        return projection([d.lng, d.lat])[0];
+function resetZoom(/*d,i*/) {
+    if (focusedBubble) {
+        resetZoomSVG();
+        focusedBubble.moveToBack();
+        focusedBubble.attr("data-foc", "false");
+        focusedBubble.transition().duration(1000)
+            .attr('fill', function (d) {
+                return encodeColorProportionHex(d.mcount, d.fcount);
+            })
+            .style('fill-opacity', .8)
+            .attr('r', function (d) {
+                return rscale(d.count);
+            })
+            .attr('cx', function (d) {
+                return projection([d.lng, d.lat])[0];
 
-                    })
-                    .attr('cy', function (d) {
-                        return projection([d.lng, d.lat])[1];
-                    })
-                    .on("end", () => {
-                        // focusedBubble.attr("data-foc", "false");
-                        // focusedBubble = null;
-                    });
-                
-                male.transition().duration(1000)
-                .attr('r', 0)
-                .attr('cx', function (d) {
-                    return projection([d.lng, d.lat])[0];
+            })
+            .attr('cy', function (d) {
+                return projection([d.lng, d.lat])[1];
+            })
+            .on("end", () => {
+                // focusedBubble.attr("data-foc", "false");
+                // focusedBubble = null;
+            });
 
-                })
-                .attr('cy', function (d) {
-                    return projection([d.lng, d.lat])[1];
-                });
+        male.transition().duration(1000)
+            .attr('r', 0)
+            .attr('cx', function (d) {
+                return projection([d.lng, d.lat])[0];
 
-                female.transition().duration(1000)
-                .attr('r', 0)
-                .attr('cx', function (d) {
-                    return projection([d.lng, d.lat])[0];
+            })
+            .attr('cy', function (d) {
+                return projection([d.lng, d.lat])[1];
+            });
 
-                })
-                .attr('cy', function (d) {
-                    return projection([d.lng, d.lat])[1];
-                });
-            }
+        female.transition().duration(1000)
+            .attr('r', 0)
+            .attr('cx', function (d) {
+                return projection([d.lng, d.lat])[0];
+
+            })
+            .attr('cy', function (d) {
+                return projection([d.lng, d.lat])[1];
+            });
+    }
 }
 
 var legend = svg.append("g")
