@@ -6,6 +6,13 @@
     stroke-linecap: round;
 }
 
+.title {
+	fill: black;
+	font: 25px sans-serif;
+	font-weight: bold;
+	text-anchor: middle;
+}
+
 div.tooltip {
     position: absolute;			
     text-align: center;	

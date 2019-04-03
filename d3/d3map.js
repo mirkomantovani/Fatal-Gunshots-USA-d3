@@ -26,6 +26,13 @@ var svg = d3.select("body").append("svg")
     }))
     .append('g');
 
+svg.append("text")
+    .attr("class", "title")
+    .attr("x", width/2)
+    .attr("y", height/10)
+    .attr("text-anchor", "middle")
+    .text("Fatal Gunshots in the - 2013");
+
 //Group for the map features
 var features = svg.append("g")
     .attr("class", "features");
@@ -46,7 +53,25 @@ var tooltip = d3.select('body')
     .attr("class", "tooltip")
     .style('position', 'absolute')
     .style('padding', '10px 10px 10px 10px')
-    .style('visibility', 'hidden');
+    .style('display', 'none');
+
+var barmale = d3.select('body')
+    .append('div')
+    .attr("class", "tooltip")
+    .style('background','#4f83ff')
+    .style('opacity',1)
+    .style('position', 'absolute')
+    .style('padding', '10px 10px 10px 10px')
+    .style('display', 'none');
+
+var barfemale = d3.select('body')
+    .append('div')
+    .attr("class", "tooltip")
+    .style('background','#e89aea')
+    .style('opacity',1)
+    .style('position', 'absolute')
+    .style('padding', '10px 10px 10px 10px')
+    .style('display', 'none');
 
 var focusedBubble = null;
 var male = null;
@@ -109,6 +134,12 @@ function ready(error, gundeaths) {
                 children: d3.sum(v.filter(function (d) { return d.ageGroup == '1' }), function (d) { return 1; }),
                 teens: d3.sum(v.filter(function (d) { return d.ageGroup == '2' }), function (d) { return 1; }),
                 adults: d3.sum(v.filter(function (d) { return d.ageGroup == '3' }), function (d) { return 1; }),
+                fchildren: d3.sum(v.filter(function (d) { return d.ageGroup == '1' && d.gender == 'F' }), function (d) { return 1; }),
+                fteens: d3.sum(v.filter(function (d) { return d.ageGroup == '2' && d.gender == 'F' }), function (d) { return 1; }),
+                fadults: d3.sum(v.filter(function (d) { return d.ageGroup == '3' && d.gender == 'F' }), function (d) { return 1; }),
+                mchildren: d3.sum(v.filter(function (d) { return d.ageGroup == '1' && d.gender == 'M' }), function (d) { return 1; }),
+                mteens: d3.sum(v.filter(function (d) { return d.ageGroup == '2' && d.gender == 'M' }), function (d) { return 1; }),
+                madults: d3.sum(v.filter(function (d) { return d.ageGroup == '3' && d.gender == 'M' }), function (d) { return 1; }),
                 fcount: d3.sum(v.filter(function (d) { return d.gender == 'F' }), function (d) { return 1; }),
                 mcount: d3.sum(v.filter(function (d) { return d.gender == 'M' }), function (d) { return 1; })
             };
@@ -128,6 +159,12 @@ function ready(error, gundeaths) {
                 children: ele.value.children,
                 teens: ele.value.teens,
                 adults: ele.value.adults,
+                fchildren: ele.value.fchildren,
+                fteens: ele.value.fteens,
+                fadults: ele.value.fadults,
+                mchildren: ele.value.mchildren,
+                mteens: ele.value.mteens,
+                madults: ele.value.madults,
                 fcount: ele.value.fcount,
                 mcount: ele.value.mcount
             });
@@ -150,6 +187,12 @@ function resetZoomSVG() {
     svg
         .transition().duration(1000)
         .attr("transform", `translate(0,0) scale(1)`);
+
+    barmale
+        .style('display','none');
+
+    barfemale
+        .style('display','none');
 }
 
 function focusedBubbleRadius(deaths) {
@@ -176,7 +219,7 @@ function drawmainmap(gundeaths) {
         .attr('r', 0)
         .attr('cx', width / 2)
         .attr('cy', height / 2);
-    // .attr('visibility','invisible');
+    // .attr('display','ininline');
 
     var deaths = bub.selectAll('.bubble')
         .data(gundeaths.sort(function (a, b) { return b.count - a.count; }))
@@ -312,16 +355,85 @@ function drawmainmap(gundeaths) {
                 male.moveToFront();
                 female.moveToFront();
 
-                var chart = c3.generate({
-                    bindto: '.male',
+                // var chart = c3.generate({
+                //     bindto: '.male',
+                //     data: {
+                //         columns: [
+                //             ['data1', 4, 2, 3],
+                //             // ['data2', 50, 20, 10, 40, 15, 25]
+                //         ],
+                //         types: {
+                //             data1: 'bar'
+                //         }
+                //     }
+                // });
+
+                barmale.transition()
+                    .style("left", width/50 + "px")
+                    .style("top", height / 3 + "px")
+                    .style('display', "inline");
+
+                barmale.html(
+                    `<div style="font-size: 1rem;	
+                    font-weight: bold">${d.city} - ${d.state}</div>
+                
+                Deaths: ${d.mcount} 
+                <br>
+                <div class="inverted" id="c3barmale"></div>
+                `
+                );
+
+                c3.generate({
+                    bindto: '#c3barmale',
+                    size: {
+                        height: 300,
+                        width: 200
+                    },
                     data: {
+
                         columns: [
-                            ['data1', 4, 2, 3],
-                            // ['data2', 50, 20, 10, 40, 15, 25]
+                            ['Children', d.mchildren],
+                            ['Teens', d.mteens],
+                            ['Adults', d.madults],
                         ],
-                        types: {
-                            data1: 'bar'
-                        }
+                        type: 'pie',
+                        // onclick: function (d, i) { console.log("onclick", d, i); },
+                        // onmouseover: function (d, i) { console.log("onmouseover", d, i); },
+                        // onmouseout: function (d, i) { console.log("onmouseout", d, i); }
+                    }
+                });
+
+                barfemale.transition()
+                .style("left", width - 200 - width/50 + "px")
+                    .style("top", height / 3 + "px")
+                    .style('display', "inline");
+
+                barfemale.html(
+                    `<div style="font-size: 1rem; font-weight: bold">${d.city} - ${d.state}</div>
+                
+                Deaths: ${d.fcount} 
+                <br>
+                <div class="inverted" id="c3barfemale"></div>
+                `
+                );
+
+                c3.generate({
+                    bindto: '#c3barfemale',
+                    size: {
+                        height: 300,
+                        width: 200
+                    },
+                    data: {
+
+                        columns: [
+                            ['Children', d.fchildren],
+                            ['Teens', d.fteens],
+                            ['Adults', d.fadults],
+                        ],
+                        type: 'pie',
+                        // onclick: function (d, i) { console.log("onclick", d, i); },
+                        // onmouseover: function (d, i) { console.log("onmouseover", d, i); },
+                        // onmouseout: function (d, i) { console.log("onmouseout", d, i); }
                     }
                 });
 
@@ -342,7 +454,7 @@ function drawmainmap(gundeaths) {
             }
 
             tooltip.transition()
-                .style('visibility', "visible");
+                .style('display', "inline");
 
             tooltip.html(
                 `<div style="font-size: 1rem; font-weight: bold">${d.city} - ${d.state}</div>
@@ -384,7 +496,7 @@ function drawmainmap(gundeaths) {
                         ['Teens', d.teens],
                         ['Adults', d.adults]
                     ],
-                    type : 'donut',
+                    type: 'donut',
                     onclick: function (d, i) { console.log("onclick", d, i); },
                     onmouseover: function (d, i) { console.log("onmouseover", d, i); },
                     onmouseout: function (d, i) { console.log("onmouseout", d, i); }
@@ -420,7 +532,7 @@ function drawmainmap(gundeaths) {
                     .attr('opacity', bubbleOpacity);
             }
 
-            tooltip.style('visibility', 'hidden');
+            tooltip.style('display', 'none');
         });
 
 }
@@ -487,7 +599,7 @@ function resetZoom(/*d,i*/) {
 
 var legend = svg.append("g")
     .attr("class", "legend")
-    .attr("transform", "translate(" + (width - 50) + "," + (height - 20) + ")")
+    .attr("transform", "translate(" + (width-width/7) + "," + (height - height/9) + ")")
     .selectAll("g")
     .data([1, 100, 400])
     .enter().append("g");
