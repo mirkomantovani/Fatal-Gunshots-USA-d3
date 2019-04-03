@@ -31,7 +31,7 @@ svg.append("text")
     .attr("x", width/2)
     .attr("y", height/10)
     .attr("text-anchor", "middle")
-    .text("Fatal Gunshots in the - 2013");
+    .text("Fatal Gunshots in the USA - 2013");
 
 //Group for the map features
 var features = svg.append("g")
